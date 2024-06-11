@@ -11,7 +11,7 @@ alias deploy4='pm2 deploy ecosystem.config.js quick-dev4 --force'
 
 
 # we_want_more
-alias wwml='cd /home/anshul/company_projects/wwm/we-want-more-backend && npm run start:dev'
+alias nes='npm run start:dev'
 alias wwms='ssh -L 3307:localhost:3306 ubuntu@44.219.152.181'
 alias deployws='pm2 deploy ecosystem.config.js staging --force'
 
