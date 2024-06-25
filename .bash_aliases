@@ -14,10 +14,13 @@ alias deploy4='pm2 deploy ecosystem.config.js quick-dev4 --force'
 alias nes='npm run start:dev'
 alias wwms='ssh -L 3307:localhost:3306 ubuntu@44.219.152.181'
 alias deployws='pm2 deploy ecosystem.config.js staging --force'
-
+# we_want_more production
 alias wwmp='ssh -L 3308:localhost:3306 ubuntu@54.237.123.182'
 
-alias tims='ssh -L 3309:localhost:3306 w3villa@calendar.kivo.ai'
-# Add an "alert" alias for long running commands.  Use like so:
-#   sleep 10; alert
+# cal.com kivo staging
+alias timsk='ssh -L 3309:localhost:3306 w3villa@calendar.kivo.ai'
+
+# times pro staging
+alias tims='ssh -L 3310:localhost:3306 ubuntu@ec2-35-92-131-58.us-west-2.compute.amazonaws.com'
+
 alias alert='notify-send --urgency=low -i "$([ $? = 0 ] && echo terminal || echo error)" "$(history|tail -n1|sed -e '\''s/^\s*[0-9]\+\s*//;s/[;&|]\s*alert$//'\'')"'
