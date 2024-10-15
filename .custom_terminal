@@ -27,7 +27,7 @@ if [ "$color_prompt" = yes ]; then
 
     parse_node_version() {
         if [ -e package.json ]; then
-            node_version=$(node --version 2>/dev/null | awk -F 'v|\\.' '{print "" $2}')
+            node_version=$(node --version 2>/dev/null | awk -F 'v' '{print substr($2, 1, 5)}')
             echo -e "\001\033[32m\002⬢ V$node_version\001\033[00m\002"
         fi
     }

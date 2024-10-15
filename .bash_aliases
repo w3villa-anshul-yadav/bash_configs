@@ -18,7 +18,10 @@ alias deployws='pm2 deploy ecosystem.config.js staging --force'
 alias wwmp='ssh -L 3308:localhost:3306 ubuntu@54.237.123.182'
 
 # cal.com kivo staging
-alias timsk='ssh -L 3309:localhost:3306 w3villa@calendar.kivo.ai'
+alias kivocs='ssh -L 3309:localhost:3306 w3villa@staging-calendar.kivo.ai'
+
+# cal.com kivo prod
+alias kivocp='ssh -L 3310:localhost:3306 w3villa@calendar.kivo.ai'
 
 # times pro staging
 alias tims='ssh -L 5433:localhost:5432 ubuntu@44.238.52.34'
