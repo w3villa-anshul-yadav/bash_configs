@@ -7,3 +7,9 @@ source ~/.bashrc
 
 ```
 
+### DO setup
+
+```
+chmod +x setup.sh
+./setup.sh
+```
