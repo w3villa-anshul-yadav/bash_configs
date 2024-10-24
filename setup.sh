@@ -107,10 +107,23 @@ echo -e "\n${BOLD}Installing NVM and Node.js 18...${NC}"
 export NVM_DIR="/root/.nvm"
 curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.0/install.sh | bash
 . "$NVM_DIR/nvm.sh"
+
+# Add NVM initialization to .bashrc
+echo -e "\n${BOLD}Configuring NVM in .bashrc...${NC}"
+cat >> ~/.bashrc << 'EOF'
+export NVM_DIR="$HOME/.nvm"
+[ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"  # This loads nvm
+[ -s "$NVM_DIR/bash_completion" ] && \. "$NVM_DIR/bash_completion"  # This loads nvm bash_completion
+EOF
+
+# Source .bashrc to make NVM available in the current session
+. ~/.bashrc
+
 nvm install 18
 nvm use 18
 nvm alias default 18
 log_installation "NVM and Node.js"
+
 
 # Create environment script
 cat > /etc/profile.d/development-env.sh << 'EOF'
