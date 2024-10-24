@@ -1,109 +1,165 @@
 #!/bin/bash
 
-# Update the package list and upgrade all packages
-sudo apt update && sudo apt upgrade -y
+# Exit on any error
+set -e
 
-# Install required dependencies
-sudo apt install -y wget curl software-properties-common apt-transport-https
+# Color codes for output
+GREEN='\033[0;32m'
+RED='\033[0;31m'
+BLUE='\033[0;34m'
+NC='\033[0m' # No Color
+BOLD='\033[1m'
 
-# Function to install Google Chrome
-install_chrome() {
-    echo "Installing Google Chrome..."
-    wget -q -O - https://dl.google.com/linux/linux_signing_key.pub | sudo apt-key add -
-    echo "deb [arch=amd64] http://dl.google.com/linux/chrome/deb/ stable main" | sudo tee /etc/apt/sources.list.d/google-chrome.list
-    sudo apt update
-    sudo apt install -y google-chrome-stable
+# Initialize installation status array
+declare -A install_status
+
+# Function to log installation status
+log_installation() {
+    if [ $? -eq 0 ]; then
+        install_status["$1"]="SUCCESS"
+        echo -e "${GREEN}✓ Installed: $1${NC}"
+    else
+        install_status["$1"]="FAILED"
+        echo -e "${RED}✗ Failed: $1${NC}"
+    fi
 }
 
-# Function to install Slack
-install_slack() {
-    echo "Installing Slack..."
-    wget -q https://downloads.slack.com/linux_releases/slack-desktop-*.deb
-    sudo apt install -y ./slack-desktop-*.deb
-    rm -f slack-desktop-*.deb
+echo -e "${BLUE}Starting installation process...${NC}\n"
+
+# Update package list and upgrade existing packages
+echo -e "${BOLD}Updating system packages...${NC}"
+apt-get update && apt-get upgrade -y
+
+# Install wget, curl, and other prerequisites
+echo -e "\n${BOLD}Installing prerequisites...${NC}"
+apt-get install -y wget curl apt-transport-https gnupg software-properties-common
+log_installation "Prerequisites"
+
+# Install Git
+echo -e "\n${BOLD}Installing Git...${NC}"
+apt-get install -y git
+git config --system credential.helper store
+git config --system pull.rebase false
+log_installation "Git"
+
+# Install Chrome
+echo -e "\n${BOLD}Installing Chrome...${NC}"
+wget https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb
+apt-get install -y ./google-chrome-stable_current_amd64.deb
+rm google-chrome-stable_current_amd64.deb
+log_installation "Chrome"
+
+# Install Slack
+echo -e "\n${BOLD}Installing Slack...${NC}"
+wget https://downloads.slack-edge.com/releases/linux/4.35.126/prod/x64/slack-desktop-4.35.126-amd64.deb
+apt-get install -y ./slack-desktop-4.35.126-amd64.deb
+rm slack-desktop-4.35.126-amd64.deb
+log_installation "Slack"
+
+# Install DBeaver CE
+echo -e "\n${BOLD}Installing DBeaver CE...${NC}"
+wget -O - https://dbeaver.io/debs/dbeaver.gpg.key | apt-key add -
+echo "deb https://dbeaver.io/debs/dbeaver-ce /" | tee /etc/apt/sources.list.d/dbeaver.list
+apt-get update
+apt-get install -y dbeaver-ce
+log_installation "DBeaver CE"
+
+# Install Postman
+echo -e "\n${BOLD}Installing Postman...${NC}"
+snap install postman
+log_installation "Postman"
+
+# Install Skype
+echo -e "\n${BOLD}Installing Skype...${NC}"
+snap install skype --classic
+log_installation "Skype"
+
+# Install VSCode
+echo -e "\n${BOLD}Installing VSCode...${NC}"
+snap install code --classic
+log_installation "VSCode"
+
+# Install Terminator
+echo -e "\n${BOLD}Installing Terminator...${NC}"
+apt-get install -y terminator
+log_installation "Terminator"
+
+# Install MySQL Server
+echo -e "\n${BOLD}Installing MySQL Server...${NC}"
+export DEBIAN_FRONTEND=noninteractive
+echo "mysql-server mysql-server/root_password password password" | debconf-set-selections
+echo "mysql-server mysql-server/root_password_again password password" | debconf-set-selections
+apt-get install -y mysql-server
+systemctl enable mysql
+systemctl start mysql
+log_installation "MySQL Server"
+
+# Install PostgreSQL
+echo -e "\n${BOLD}Installing PostgreSQL...${NC}"
+apt-get install -y postgresql postgresql-contrib
+systemctl enable postgresql
+systemctl start postgresql
+su - postgres -c "psql -c \"ALTER USER postgres WITH PASSWORD 'password';\""
+log_installation "PostgreSQL"
+
+# Install NVM and Node.js 18
+echo -e "\n${BOLD}Installing NVM and Node.js 18...${NC}"
+export NVM_DIR="/root/.nvm"
+curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.0/install.sh | bash
+. "$NVM_DIR/nvm.sh"
+nvm install 18
+nvm use 18
+nvm alias default 18
+log_installation "NVM and Node.js"
+
+# Create environment script
+cat > /etc/profile.d/development-env.sh << 'EOF'
+export NVM_DIR="/root/.nvm"
+[ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
+[ -s "$NVM_DIR/bash_completion" ] && \. "$NVM_DIR/bash_completion"
+EOF
+chmod +x /etc/profile.d/development-env.sh
+
+# Final system update
+apt-get update && apt-get upgrade -y
+
+# Print installation report
+echo -e "\n${BOLD}Installation Report:${NC}"
+echo -e "${BOLD}==================${NC}"
+
+# Function to check if a command exists
+check_command() {
+    command -v $1 &> /dev/null
 }
 
-# Function to install DBeaver Community Edition
-install_dbeaver() {
-    echo "Installing DBeaver Community Edition..."
-    wget -qO - https://dbeaver.io/debs/dbeaver.gpg.key | sudo apt-key add -
-    echo "deb https://dbeaver.io/debs/ dbeaver-ce main" | sudo tee /etc/apt/sources.list.d/dbeaver.list
-    sudo apt update
-    sudo apt install -y dbeaver-ce
+# Function to check if a service is running
+check_service() {
+    systemctl is-active --quiet $1
 }
 
-# Function to install Postman
-install_postman() {
-    echo "Installing Postman..."
-    wget -q https://dl.pstmn.io/download/latest/linux64/Postman-linux-x64.tar.gz
-    sudo tar -xzf Postman-linux-x64.tar.gz -C /opt
-    sudo ln -s /opt/Postman/Postman /usr/bin/postman
-    rm -f Postman-linux-x64.tar.gz
-}
+# Verify each installation
+echo -e "\n${BOLD}Development Tools:${NC}"
+check_command git && echo -e "${GREEN}✓ Git $(git --version)${NC}" || echo -e "${RED}✗ Git not found${NC}"
+[ -f "/usr/bin/google-chrome" ] && echo -e "${GREEN}✓ Chrome$(google-chrome --version)${NC}" || echo -e "${RED}✗ Chrome not found${NC}"
+[ -f "/usr/bin/slack" ] && echo -e "${GREEN}✓ Slack${NC}" || echo -e "${RED}✗ Slack not found${NC}"
+check_command dbeaver && echo -e "${GREEN}✓ DBeaver${NC}" || echo -e "${RED}✗ DBeaver not found${NC}"
+snap list | grep -q postman && echo -e "${GREEN}✓ Postman${NC}" || echo -e "${RED}✗ Postman not found${NC}"
+snap list | grep -q skype && echo -e "${GREEN}✓ Skype${NC}" || echo -e "${RED}✗ Skype not found${NC}"
+check_command code && echo -e "${GREEN}✓ VSCode$(code --version | head -n1)${NC}" || echo -e "${RED}✗ VSCode not found${NC}"
+check_command terminator && echo -e "${GREEN}✓ Terminator${NC}" || echo -e "${RED}✗ Terminator not found${NC}"
 
-# Function to install Skype
-install_skype() {
-    echo "Installing Skype..."
-    wget -q https://go.skype.com/skypeforlinux-64.deb
-    sudo apt install -y ./skypeforlinux-64.deb
-    rm -f skypeforlinux-64.deb
-}
+echo -e "\n${BOLD}Databases:${NC}"
+check_service mysql && echo -e "${GREEN}✓ MySQL Server is running${NC}" || echo -e "${RED}✗ MySQL Server is not running${NC}"
+check_service postgresql && echo -e "${GREEN}✓ PostgreSQL is running${NC}" || echo -e "${RED}✗ PostgreSQL is not running${NC}"
 
-# Function to install Visual Studio Code
-install_vscode() {
-    echo "Installing Visual Studio Code..."
-    wget -q https://packages.microsoft.com/keys/microsoft.asc -O- | sudo apt-key add -
-    sudo add-apt-repository "deb [arch=amd64] https://packages.microsoft.com/repos/vscode stable main"
-    sudo apt update
-    sudo apt install -y code
-}
+echo -e "\n${BOLD}Node.js Environment:${NC}"
+[ -s "$NVM_DIR/nvm.sh" ] && echo -e "${GREEN}✓ NVM installed${NC}" || echo -e "${RED}✗ NVM not found${NC}"
+if [ -s "$NVM_DIR/nvm.sh" ]; then
+    node_version=$(nvm current)
+    echo -e "${GREEN}✓ Node.js $node_version${NC}"
+else
+    echo -e "${RED}✗ Node.js not found${NC}"
+fi
 
-# Function to install Terminator
-install_terminator() {
-    echo "Installing Terminator..."
-    sudo apt install -y terminator
-}
-
-# Function to install MySQL Server
-install_mysql() {
-    echo "Installing MySQL Server..."
-    sudo apt install -y mysql-server
-    # Secure MySQL installation (non-interactive)
-    sudo mysql -e "ALTER USER 'root'@'localhost' IDENTIFIED WITH mysql_native_password BY 'password';"
-    sudo mysql -e "FLUSH PRIVILEGES;"
-}
-
-# Function to install PostgreSQL
-install_postgresql() {
-    echo "Installing PostgreSQL..."
-    sudo apt install -y postgresql
-    # Set username and password
-    sudo -u postgres psql -c "ALTER USER postgres WITH PASSWORD 'password';"
-}
-
-# Function to install NVM and Node.js
-install_nvm_node() {
-    echo "Installing NVM and Node.js..."
-    curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.5/install.sh | bash
-    # Source NVM to the current shell
-    export NVM_DIR="$HOME/.nvm"
-    [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh" # This loads nvm
-    [ -s "$NVM_DIR/bash_completion" ] && \. "$NVM_DIR/bash_completion" # This loads nvm bash_completion
-    nvm install 18
-}
-
-# Run installation functions
-install_chrome
-install_slack
-install_dbeaver
-install_postman
-install_skype
-install_vscode
-install_terminator
-install_mysql
-install_postgresql
-install_nvm_node
-
-# Clean up
-sudo apt autoremove -y
-echo "Installation completed successfully!"
+echo -e "\n${BOLD}Installation process completed!${NC}"
+echo -e "${BLUE}Please log out and log back in for all changes to take effect.${NC}"
